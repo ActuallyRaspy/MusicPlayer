@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:viewModels="clr-namespace:MusicPlayer.ViewModels"
+             x:Class="MusicPlayer.Views.MainPage"
+             Title="MainPage"
+             >
+    <ContentPage.BindingContext>
+        <viewModels:MainViewModel />
+    </ContentPage.BindingContext>
+
+
+
+    <StackLayout Padding="20">
+        <!-- Title -->
+        <Label Text="My Music Player" FontSize="24" HorizontalOptions="Center" />
+
+        <!-- Playlist selection -->
+        <Label Text="Select Playlist:" />
+        <Picker ItemsSource="{Binding Playlists}" SelectedItem="{Binding CurrentPlaylist}" ItemDisplayBinding="{Binding Name}" />
+
+        <!-- ListView for songs in the selected playlist -->
+        <ListView x:Name="songsListView" ItemsSource="{Binding CurrentPlaylist.Songs}">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <TextCell Text="{Binding Title}" Detail="{Binding Artist}" />
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <!-- MediaElement for playing music -->
+        <toolkit:MediaElement x:Name="mediaPlayer" 
+                  Source="{Binding CurrentSong}" 
+                  ShouldLoopPlayback="False" 
+                  ShouldAutoPlay="False" 
+                  BackgroundColor="Black" 
+                  WidthRequest="300" 
+                  HeightRequest="50" />
+
+        <!-- Play, Pause, and Skip buttons -->
+        <StackLayout Orientation="Horizontal" HorizontalOptions="Center">
+            <Button Text="Play" Command="{Binding PlayCommand}" />
+            <Button Text="Pause" Command="{Binding PauseCommand}" />
+            <Button Text="Skip" Command="{Binding SkipCommand}" />
+        </StackLayout>
+
+        <!-- Add Song Button (for testing) -->
+        <Button Text="Add Song to Playlist" Command="{Binding AddToPlaylistCommand}" CommandParameter="path/to/song4.mp3" />
+    </StackLayout>
+</ContentPage>
