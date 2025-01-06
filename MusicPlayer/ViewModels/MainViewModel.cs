@@ -104,14 +104,59 @@ namespace MusicPlayer.ViewModels
             }
         }
 
-        private void AddToPlaylist() // Open file explorer, select MP3 file. Select an existing or create a new playlist. Add the song to it.
+        private async void AddToPlaylist() // Make this method async
         {
-            if (CurrentPlaylist != null && !CurrentPlaylist.Songs.Any(s => s.FilePath == songFilePath))
+            var customFileType = new FilePickerFileType(
+                new Dictionary<DevicePlatform, IEnumerable<string>>
+                {
+            { DevicePlatform.Android, new[] { "audio/mpeg" } }, // MIME type
+                });
+
+            PickOptions options = new PickOptions()
             {
-                var newSong = new Song { Title = "New Song", Artist = "Unknown", FilePath = songFilePath };
-                CurrentPlaylist.Songs.Add(newSong);
-                OnPropertyChanged(nameof(CurrentPlaylist));
+                PickerTitle = "Please select an audio file",
+                FileTypes = customFileType
+            };
+
+            // Await the result of the file picker
+            var pickedSong = await PickAndShow(options);
+
+            // If a song was selected and it's a valid MP3 file
+            if (pickedSong != null)
+            {
+                Song song = new Song { Title = pickedSong.FileName, FilePath = pickedSong.FullPath };
+                CurrentPlaylist.Songs.Add(song);
+                OnPropertyChanged(nameof(CurrentPlaylist)); // Notify UI about the change
             }
+        }
+
+        public async Task<FileResult> PickAndShow(PickOptions options)
+        {
+            try
+            {
+                var result = await FilePicker.Default.PickAsync(options);
+                if (result != null)
+                {
+                    if (result.FileName.EndsWith("mp3", StringComparison.OrdinalIgnoreCase) ||
+                        result.FileName.EndsWith("wav", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Return the result, no need to create a Song here
+                        return result;
+                    }
+                    else
+                    {
+                        // Optionally, show a message if the file type isn't valid
+                        // e.g., ShowMessage("Invalid file type");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle any errors (e.g., user canceled or there was an issue with the file picker)
+                Console.WriteLine($"Error picking file: {ex.Message}");
+            }
+
+            return null; // Return null if no valid file was picked
         }
     }
 }
