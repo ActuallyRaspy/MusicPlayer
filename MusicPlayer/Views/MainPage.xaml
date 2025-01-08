@@ -2,50 +2,59 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:vm="clr-namespace:MusicPlayer.ViewModels"
              xmlns:viewModels="clr-namespace:MusicPlayer.ViewModels"
              x:Class="MusicPlayer.Views.MainPage"
              Title="MainPage"
              >
     <ContentPage.BindingContext>
-        <viewModels:MainViewModel />
+        <vm:MainViewModel />
     </ContentPage.BindingContext>
 
+    <ContentPage.Resources>
+        <DataTemplate x:Key="SongTemplate">
+            <ViewCell>
+                <StackLayout Padding="10">
+                    <Label Text="{Binding Title}" FontSize="16" />
+                    <Label Text="{Binding Artist}" FontSize="12" TextColor="Gray" />
+                </StackLayout>
+            </ViewCell>
+        </DataTemplate>
+    </ContentPage.Resources>
 
 
     <StackLayout Padding="20">
-        <!-- Title -->
-        <Label Text="My Music Player" FontSize="24" HorizontalOptions="Center" />
+        <Label Text="Playlists" FontSize="20" />
+        <Picker ItemsSource="{Binding Playlists}" 
+                SelectedItem="{Binding CurrentSong, Mode=TwoWay}"
+                ItemDisplayBinding="{Binding Name}" 
+                />
 
-        <!-- Playlist selection -->
-        <Label Text="Select Playlist:" />
-        <Picker ItemsSource="{Binding Playlists}" SelectedItem="{Binding CurrentPlaylist}" ItemDisplayBinding="{Binding Name}" />
-
-        <!-- ListView for songs in the selected playlist -->
-        <ListView x:Name="songsListView" ItemsSource="{Binding CurrentPlaylist.Songs}">
+        <Label Text="Songs" FontSize="20" />
+        <ListView ItemsSource="{Binding CurrentPlaylist.Songs}"
+          SelectedItem="{Binding CurrentSong}">
             <ListView.ItemTemplate>
                 <DataTemplate>
-                    <TextCell Text="{Binding Title}" Detail="{Binding Artist}" />
+                    <ViewCell>
+                        <StackLayout Orientation="Vertical" Padding="10">
+                            <Label Text="{Binding Title}" 
+                           
+                           FontAttributes="Bold"/>
+                            <Label Text="{Binding Artist}" 
+                           
+                           TextColor="Gray"/>
+                        </StackLayout>
+                    </ViewCell>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
 
-        <!-- MediaElement for playing music -->
-        <toolkit:MediaElement x:Name="mediaPlayer" 
-                  Source="{Binding CurrentSong}" 
-                  ShouldLoopPlayback="False" 
-                  ShouldAutoPlay="False" 
-                  BackgroundColor="Black" 
-                  WidthRequest="300" 
-                  HeightRequest="50" />
 
-        <!-- Play, Pause, and Skip buttons -->
-        <StackLayout Orientation="Horizontal" HorizontalOptions="Center">
-            <Button Text="Play" Command="{Binding PlayCommand}" />
-            <Button Text="Pause" Command="{Binding PauseCommand}" />
-            <Button Text="Skip" Command="{Binding SkipCommand}" />
-        </StackLayout>
-
-        <!-- Add Song Button (for testing) -->
-        <Button Text="Add Song to Playlist" Command="{Binding AddToPlaylistCommand}" CommandParameter="path/to/song4.mp3" />
+        <Button Text="Play" Command="{Binding PlayCommand}" />
+        <Button Text="Pause" Command="{Binding PauseCommand}" />
+        <Button Text="Skip" Command="{Binding SkipCommand}" />
+        <Button Text="Add Song" Command="{Binding AddToPlaylistCommand}" />
+        <Button Text="Create Playlist" Command="{Binding CreatePlaylistCommand}" />
+        <Button Text="Delete Playlist" Command="{Binding DeletePlaylistCommand}" />
     </StackLayout>
 </ContentPage>

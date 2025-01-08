@@ -1,17 +1,22 @@
-﻿using CommunityToolkit.Maui.Core.Views;
-using System;
-using System.Collections.Generic;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using MusicPlayer.Models;
+using MusicPlayer.Services;
 using System.Collections.ObjectModel;
+using CommunityToolkit.Maui.Core.Views;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using MusicPlayer.Models;
 using System.Threading.Tasks;
+using MusicPlayer.Services;
 
 namespace MusicPlayer.ViewModels
 {
     public class MainViewModel : BindableObject
     {
-        private string _currentSong;
+
+        private readonly AudioService _audioPlayerService;
+        private Song _currentSong;
         private bool _isPlaying;
         private Playlist _currentPlaylist;
 
@@ -27,13 +32,16 @@ namespace MusicPlayer.ViewModels
             }
         }
 
-        public string CurrentSong
+        public Song CurrentSong
         {
             get => _currentSong;
             set
             {
-                _currentSong = value;
-                OnPropertyChanged();
+                if (_currentSong != value)
+                {
+                    _currentSong = value;
+                    OnPropertyChanged();
+                }
             }
         }
 
@@ -52,20 +60,22 @@ namespace MusicPlayer.ViewModels
         public Command SkipCommand { get; }
         public Command AddToPlaylistCommand { get; }
 
+        // ✅ Parameterless constructor for XAML
         public MainViewModel()
         {
             Playlists = new ObservableCollection<Playlist>();
             PlayCommand = new Command(Play);
             PauseCommand = new Command(Pause);
             SkipCommand = new Command(Skip);
-            AddToPlaylistCommand = new Command(AddToPlaylist);
+            AddToPlaylistCommand = new Command(async () => await AddToPlaylist());
+
+            _audioPlayerService = new AudioService();
 
             LoadPlaylists();
         }
 
         private void LoadPlaylists()
         {
-            // Load some example playlists
             var playlist1 = new Playlist("Favorites");
             playlist1.Songs.Add(new Song { Title = "Song 1", Artist = "Artist 1", FilePath = "path/to/song1.mp3" });
             playlist1.Songs.Add(new Song { Title = "Song 2", Artist = "Artist 2", FilePath = "path/to/song2.mp3" });
@@ -76,87 +86,72 @@ namespace MusicPlayer.ViewModels
             Playlists.Add(playlist1);
             Playlists.Add(playlist2);
 
-            CurrentPlaylist = playlist1; // Default to the first playlist
+            CurrentPlaylist = playlist1;
         }
 
         private void Play()
         {
-            if (!string.IsNullOrEmpty(CurrentSong))
+            if (CurrentSong != null && !string.IsNullOrEmpty(CurrentSong.FilePath))
             {
+                if (IsPlaying)
+                {
+                    _audioPlayerService.Resume();
+                }
+                else
+                {
+                    _audioPlayerService.Play(CurrentSong.FilePath);
+                }
                 IsPlaying = true;
-                // Logic to trigger MediaElement play (view-side binding will handle it)
             }
         }
 
         private void Pause()
         {
-            IsPlaying = false;
-            // Logic to trigger MediaElement pause (view-side binding will handle it)
+            if (IsPlaying)
+            {
+                _audioPlayerService.Pause();
+                IsPlaying = false;
+            }
         }
 
         private void Skip()
         {
-            var nextSong = CurrentPlaylist.Songs.SkipWhile(s => s.FilePath != CurrentSong).Skip(1).FirstOrDefault();
+            var nextSong = CurrentPlaylist?.Songs
+                .SkipWhile(s => s != CurrentSong)
+                .Skip(1)
+                .FirstOrDefault();
+
             if (nextSong != null)
             {
-                CurrentSong = nextSong.FilePath;
-                // Logic to trigger MediaElement play the next song (view-side binding will handle it)
+                CurrentSong = nextSong;
+                Play();
             }
         }
 
-        private async void AddToPlaylist() // Make this method async
+        private async Task AddToPlaylist()
         {
-            var customFileType = new FilePickerFileType(
-                new Dictionary<DevicePlatform, IEnumerable<string>>
-                {
-            { DevicePlatform.Android, new[] { "audio/mpeg" } }, // MIME type
-                });
-
-            PickOptions options = new PickOptions()
+            var customAudioType = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
             {
-                PickerTitle = "Please select an audio file",
-                FileTypes = customFileType
+                { DevicePlatform.Android, new[] { "audio/mpeg", "audio/mp3", "audio/wav" } },
+                { DevicePlatform.iOS, new[] { "public.audio" } },
+                { DevicePlatform.WinUI, new[] { ".mp3", ".wav" } },
+                { DevicePlatform.MacCatalyst, new[] { "public.audio" } }
+            });
+
+            var options = new PickOptions
+            {
+                PickerTitle = "Select an audio file",
+                FileTypes = customAudioType
             };
 
-            // Await the result of the file picker
-            var pickedSong = await PickAndShow(options);
+            var result = await FilePicker.Default.PickAsync(options);
 
-            // If a song was selected and it's a valid MP3 file
-            if (pickedSong != null)
+            if (result != null)
             {
-                Song song = new Song { Title = pickedSong.FileName, FilePath = pickedSong.FullPath };
-                CurrentPlaylist.Songs.Add(song);
-                OnPropertyChanged(nameof(CurrentPlaylist)); // Notify UI about the change
+                var song = new Song { Title = result.FileName, FilePath = result.FullPath };
+                CurrentPlaylist?.Songs.Add(song);
+                OnPropertyChanged(nameof(CurrentPlaylist));
             }
-        }
-
-        public async Task<FileResult> PickAndShow(PickOptions options)
-        {
-            try
-            {
-                var result = await FilePicker.Default.PickAsync(options);
-                if (result != null)
-                {
-                    if (result.FileName.EndsWith("mp3", StringComparison.OrdinalIgnoreCase) ||
-                        result.FileName.EndsWith("wav", StringComparison.OrdinalIgnoreCase))
-                    {
-                        // Return the result, no need to create a Song here
-                        return result;
-                    }
-                    else
-                    {
-                        // Optionally, show a message if the file type isn't valid
-                        // e.g., ShowMessage("Invalid file type");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Handle any errors (e.g., user canceled or there was an issue with the file picker)
-                Console.WriteLine($"Error picking file: {ex.Message}");
-            }
-
-            return null; // Return null if no valid file was picked
         }
     }
 }

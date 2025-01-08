@@ -2,6 +2,9 @@
 using Microsoft.Extensions.Logging;
 using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Core;
+using MusicPlayer.Services;
+using MusicPlayer.ViewModels;
+using MusicPlayer.Views;
 
 namespace MusicPlayer
 {
@@ -21,8 +24,12 @@ namespace MusicPlayer
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
+                builder.Services.AddSingleton<AudioService>();
+                builder.Services.AddSingleton<MainViewModel>();
+                builder.Services.AddSingleton<MainPage>();
+
 #if DEBUG
-    		builder.Logging.AddDebug();
+            builder.Logging.AddDebug();
 #endif
 
             return builder.Build();
