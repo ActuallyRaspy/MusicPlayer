@@ -12,7 +12,7 @@ namespace MusicPlayer.Services
     [Service(ForegroundServiceType = global::Android.Content.PM.ForegroundService.TypeMediaPlayback)]
     public class MusicPlayerService : Service
     {
-        private AudioService _audioService = new AudioService();
+        private AudioService _audioService = ServiceLocator.AudioServiceInstance;
         private PendingIntent _playPausePendingIntent;
         private NotificationCompat.Builder _notificationBuilder;
 
@@ -21,22 +21,48 @@ namespace MusicPlayer.Services
             return null; // No binding needed for background playback
         }
 
+        public override void OnCreate()
+        {
+            base.OnCreate();
+            ServiceLocator.AudioServiceInstance.PlaybackStateChanged += OnPlaybackStateChanged;
+        }
+
+        private void OnPlaybackStateChanged(bool isPlaying)
+        {
+            UpdateNotification();
+        }
+
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+            ServiceLocator.AudioServiceInstance.PlaybackStateChanged -= OnPlaybackStateChanged; // Unsubscribe
+            _audioService?.Stop();
+        }
+
         public override StartCommandResult OnStartCommand(Intent intent, StartCommandFlags flags, int startId)
         {
             base.OnStartCommand(intent, flags, startId);
 
             var action = intent.Action;
+
             var filePath = intent.GetStringExtra("filePath");
 
             // Handle Play/Pause action from the notification
             if (action == "com.musicplayer.PLAY_PAUSE")
             {
+                
+
                 if (_audioService.IsPlaying)
                 {
+                    Android.Util.Log.Debug("MusicPlayerService", $"Received action: {action} PAUSE");
+                    OnPlaybackStateChanged(false);
+                    
                     _audioService.Pause(); // Pause music if it's playing
                 }
                 else
                 {
+                    Android.Util.Log.Debug("MusicPlayerService", $"Received action: {action} RESUME");
+                    OnPlaybackStateChanged(true);
                     _audioService.Resume(); // Resume music if paused
                 }
 
@@ -52,7 +78,7 @@ namespace MusicPlayer.Services
             // Create the PendingIntent for the play/pause button
             var playPauseIntent = new Intent(this, typeof(MusicPlayerService));
             playPauseIntent.SetAction("com.musicplayer.PLAY_PAUSE");
-            _playPausePendingIntent = PendingIntent.GetService(this, 0, playPauseIntent, PendingIntentFlags.Mutable);
+            _playPausePendingIntent = PendingIntent.GetService(this, 0, playPauseIntent, PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Mutable);
 
             // Create the notification channel if necessary
             if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
@@ -69,7 +95,8 @@ namespace MusicPlayer.Services
             // Initialize notification builder
             _notificationBuilder = new NotificationCompat.Builder(this, "music_player_channel")
                 .SetContentTitle("Music Player")
-                .SetContentText(_audioService.IsPlaying ? "Playing music..." : "Paused")
+                .SetContentIntent(_playPausePendingIntent)
+                .SetContentText(_audioService.IsPlaying ?  "Playing music..." : "Paused")
                 .SetSmallIcon(Resource.Drawable.exo_icon_pause) // Replace with your actual icon
                 .SetStyle(new AndroidX.Media.App.NotificationCompat.MediaStyle()
                     .SetShowActionsInCompactView(0) // Show action buttons compactly
@@ -102,10 +129,6 @@ namespace MusicPlayer.Services
             notificationManager.Notify(1, _notificationBuilder.Build());
         }
 
-        public override void OnDestroy()
-        {
-            base.OnDestroy();
-            _audioService?.Stop(); // Stop and release the player when the service is destroyed
-        }
+        
     }
 }

@@ -13,8 +13,9 @@ namespace MusicPlayer
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
+
             Intent intent = new Intent(this, typeof(MusicPlayerService));
-            //intent.PutExtra("filePath", "path/to/your/audio/file.mp3"); // Set your audio file path here
+            intent.PutExtra("filePath", ServiceLocator.AudioServiceInstance.CurrentFilePath); // Set your audio file path here
             ContextCompat.StartForegroundService(this, intent);
         }
     }

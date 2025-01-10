@@ -9,13 +9,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MusicPlayer.Services;
+using Microsoft.Maui.Controls;
 
 namespace MusicPlayer.ViewModels
 {
     public class MainViewModel : BindableObject
     {
 
-        private readonly AudioService _audioPlayerService;
+        private AudioService _audioPlayerService = ServiceLocator.AudioServiceInstance;
+        private FileService _fileService = new FileService();
+
         private Song _currentSong;
         private bool _isPlaying;
         private Playlist _currentPlaylist;
@@ -59,17 +62,20 @@ namespace MusicPlayer.ViewModels
         public Command PauseCommand { get; }
         public Command SkipCommand { get; }
         public Command AddToPlaylistCommand { get; }
+        public Command CreatePlaylistCommand { get; }
+        
 
         // ✅ Parameterless constructor for XAML
         public MainViewModel()
         {
+            _audioPlayerService = new AudioService();
             Playlists = new ObservableCollection<Playlist>();
             PlayCommand = new Command(Play);
             PauseCommand = new Command(Pause);
             SkipCommand = new Command(Skip);
             AddToPlaylistCommand = new Command(async () => await AddToPlaylist());
+            CreatePlaylistCommand = new Command(async () => await CreatePlaylist());
 
-            _audioPlayerService = new AudioService();
 
             LoadPlaylists();
         }
@@ -96,6 +102,7 @@ namespace MusicPlayer.ViewModels
                 if (IsPlaying)
                 {
                     _audioPlayerService.Resume();
+
                 }
                 else
                 {
@@ -151,6 +158,29 @@ namespace MusicPlayer.ViewModels
                 var song = new Song { Title = result.FileName, FilePath = result.FullPath };
                 CurrentPlaylist?.Songs.Add(song);
                 OnPropertyChanged(nameof(CurrentPlaylist));
+            }
+        }
+
+        private async Task CreatePlaylist()
+        {
+            // Display a prompt for the user to input the playlist name
+            string playlistName = await Application.Current.MainPage.DisplayPromptAsync(
+                "New Playlist",
+                "Enter a name for your new playlist:",
+                accept: "OK",
+                cancel: "Cancel",
+                placeholder: "Playlist name");
+
+            // Check if the user provided a name or canceled the dialog
+            if (!string.IsNullOrEmpty(playlistName))
+            {                
+                _fileService.CreatePlaylist(playlistName);
+                OnPropertyChanged();
+            }
+            else
+            {
+                // Handle the case where the user canceled or didn't input anything
+                Console.WriteLine("Playlist creation canceled or no name provided.");
             }
         }
     }

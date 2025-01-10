@@ -6,23 +6,25 @@ namespace MusicPlayer.Services
     {
         private IAudioPlayer _audioPlayer;
         private double _pausePosition;
-        private string currentFilePath = "";
+        public string CurrentFilePath = "";
+        public event Action<bool> PlaybackStateChanged; // True = Playing, False = Paused
         public bool IsPlaying => _audioPlayer?.IsPlaying ?? false;
         public double CurrentPosition => _audioPlayer?.CurrentPosition ?? 0;
 
+ 
         public void Play(string filePath)
         {
-            if (_audioPlayer == null || currentFilePath != filePath)
+            if (_audioPlayer == null || CurrentFilePath != filePath)
             {
                 _audioPlayer = AudioManager.Current.CreatePlayer(filePath);
-                currentFilePath = filePath;
+                CurrentFilePath = filePath;
             }
 
             if (_pausePosition > 0)
             {
                 _audioPlayer.Seek(_pausePosition); // Resume from last position
             }
-
+            PlaybackStateChanged?.Invoke(IsPlaying); // Notify state change
             _audioPlayer.Play();
         }
 
@@ -31,6 +33,7 @@ namespace MusicPlayer.Services
             if (_audioPlayer?.IsPlaying == true)
             {
                 _pausePosition = _audioPlayer.CurrentPosition;
+                PlaybackStateChanged?.Invoke(IsPlaying); // Notify state change
                 _audioPlayer.Pause();
             }
         }

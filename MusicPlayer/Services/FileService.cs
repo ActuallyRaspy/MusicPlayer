@@ -10,13 +10,13 @@ namespace MusicPlayer.Services
     public class FileService
     {
      
-        string backingFile = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal), "playlist.txt");
+        string backingFilePath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData).ToString();
             
 
         public async void SavePlaylist(Playlist playlist)
         {
             
-            using (var writer = File.CreateText(backingFile))
+            using (var writer = File.CreateText(backingFilePath + "/" + playlist.Name))
             {
                 for (int i = 0; i < playlist.Songs.Count(); i++)
                 {
@@ -28,11 +28,16 @@ namespace MusicPlayer.Services
             }
         }
 
+        public async void CreatePlaylist(string playlistName)
+        {
+            using (var writer = File.CreateText(backingFilePath + "/" + playlistName + ".txt"))
+            {
+                await writer.WriteLineAsync(backingFilePath + "/" + playlistName + ".txt");
+            }
+        }
         public void RemovePlaylist(Playlist playlist)
         {
-
         }
-
         public void UpdatePlaylist(Playlist playlist)
         {
 
