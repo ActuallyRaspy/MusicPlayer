@@ -10,7 +10,7 @@ namespace MusicPlayer.Models
     public class Playlist
     {
         public string Name { get; set; }
-        public ObservableCollection<Song> Songs { get; set; }
+        public ObservableCollection<Song>? Songs { get; set; }
 
         public Playlist(string name)
         {

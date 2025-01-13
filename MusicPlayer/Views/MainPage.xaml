@@ -26,7 +26,7 @@
     <StackLayout Padding="20">
         <Label Text="Playlists" FontSize="20" />
         <Picker ItemsSource="{Binding Playlists}" 
-                SelectedItem="{Binding CurrentSong, Mode=TwoWay}"
+                SelectedItem="{Binding CurrentPlaylist, Mode=TwoWay}"
                 ItemDisplayBinding="{Binding Name}" 
                 />
 

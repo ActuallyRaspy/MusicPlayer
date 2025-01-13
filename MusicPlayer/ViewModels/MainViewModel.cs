@@ -76,23 +76,19 @@ namespace MusicPlayer.ViewModels
             AddToPlaylistCommand = new Command(async () => await AddToPlaylist());
             CreatePlaylistCommand = new Command(async () => await CreatePlaylist());
 
-
-            LoadPlaylists();
+            LoadPlaylistsAsync();
         }
 
-        private void LoadPlaylists()
+        private async Task LoadPlaylistsAsync()
         {
-            var playlist1 = new Playlist("Favorites");
-            playlist1.Songs.Add(new Song { Title = "Song 1", Artist = "Artist 1", FilePath = "path/to/song1.mp3" });
-            playlist1.Songs.Add(new Song { Title = "Song 2", Artist = "Artist 2", FilePath = "path/to/song2.mp3" });
-
-            var playlist2 = new Playlist("Chill Vibes");
-            playlist2.Songs.Add(new Song { Title = "Song 3", Artist = "Artist 3", FilePath = "path/to/song3.mp3" });
-
-            Playlists.Add(playlist1);
-            Playlists.Add(playlist2);
-
-            CurrentPlaylist = playlist1;
+            var playlists = await _fileService.GetPlaylists();
+            Playlists.Clear(); // Clear the existing collection
+            foreach (var playlist in playlists)
+            {
+                Playlists.Add(playlist); // Add new playlists to the collection
+            }
+                
+            CurrentPlaylist = Playlists[0];
         }
 
         private void Play()
@@ -157,8 +153,10 @@ namespace MusicPlayer.ViewModels
             {
                 var song = new Song { Title = result.FileName, FilePath = result.FullPath };
                 CurrentPlaylist?.Songs.Add(song);
+                _fileService.SavePlaylist(CurrentPlaylist);
                 OnPropertyChanged(nameof(CurrentPlaylist));
             }
+            await LoadPlaylistsAsync();
         }
 
         private async Task CreatePlaylist()
@@ -182,6 +180,7 @@ namespace MusicPlayer.ViewModels
                 // Handle the case where the user canceled or didn't input anything
                 Console.WriteLine("Playlist creation canceled or no name provided.");
             }
+            await LoadPlaylistsAsync();
         }
     }
 }

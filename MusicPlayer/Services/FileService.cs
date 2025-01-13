@@ -1,22 +1,23 @@
 ﻿using MusicPlayer.Models;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace MusicPlayer.Services
 {
     public class FileService
     {
      
-        string backingFilePath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData).ToString();
-            
+        string targetPath = FileSystem.Current.AppDataDirectory;
 
         public async void SavePlaylist(Playlist playlist)
         {
-            
-            using (var writer = File.CreateText(backingFilePath + "/" + playlist.Name))
+
+            using (var writer = File.CreateText(Path.Combine(targetPath, playlist.Name)))
             {
                 for (int i = 0; i < playlist.Songs.Count(); i++)
                 {
@@ -30,11 +31,84 @@ namespace MusicPlayer.Services
 
         public async void CreatePlaylist(string playlistName)
         {
-            using (var writer = File.CreateText(backingFilePath + "/" + playlistName + ".txt"))
+
+            string filePath = Path.Combine(targetPath, playlistName);
+
+            if (!Directory.Exists(targetPath))
             {
-                await writer.WriteLineAsync(backingFilePath + "/" + playlistName + ".txt");
+                Directory.CreateDirectory(targetPath);
             }
+
+            try
+            {
+                // Create and write to the file
+                using (FileStream outputStream = File.Create(filePath)) // Creates or overwrites the file
+                using (StreamWriter writer = new StreamWriter(outputStream))
+                {
+                    await writer.WriteLineAsync("This is a new playlist file: " + playlistName);
+                }
+
+                Console.WriteLine($"Playlist '{playlistName}' created successfully at: {filePath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error creating playlist: {ex.Message}");
+            }
+            //Playlist playlist1 = new Playlist(playlistName);
         }
+
+        public async Task<ObservableCollection<Playlist>> GetPlaylists()
+        {
+            ObservableCollection<Playlist> allPlaylists = new ObservableCollection<Playlist>();
+
+            string[] filePaths = Directory.GetFiles(targetPath, "*.txt", SearchOption.TopDirectoryOnly);
+            Console.WriteLine($"Found {filePaths.Length} files in {targetPath}.");
+
+            for (int i = 0; i < filePaths.Length; i++)
+            {
+                try
+                {
+                    Console.WriteLine($"Processing file: {filePaths[i]}");
+
+                    using (FileStream InputStream = File.OpenRead(filePaths[i]))
+                    {
+                        string fileName = Path.GetFileName(filePaths[i]);
+                        Playlist playlist = new Playlist(filePaths[i]) { Name = fileName };
+
+                        using (StreamReader reader = new StreamReader(InputStream))
+                        {
+                            string line;
+                            while ((line = reader.ReadLine()) != null)
+                            {
+                                Console.WriteLine($"Read line: {line}");
+                                string[] splitSong = line.Split(";");
+                                if (splitSong.Length >= 3)
+                                {
+                                    Song song = new Song { Title = splitSong[0], FilePath = splitSong[2] };
+                                    playlist.Songs.Add(song);
+                                }
+                                else
+                                {   
+                                    Console.WriteLine($"Skipping invalid line: {line}");
+                                }
+                            }
+                        }
+                        allPlaylists.Add(playlist);
+                        Console.WriteLine($"Added playlist: {playlist.Name}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error processing file {filePaths[i]}: {ex.Message}");
+                }
+            }
+
+            Console.WriteLine($"Total playlists created: {allPlaylists.Count}");
+            return allPlaylists;
+        }
+
+
+
         public void RemovePlaylist(Playlist playlist)
         {
         }
