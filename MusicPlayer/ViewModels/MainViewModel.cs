@@ -68,7 +68,7 @@ namespace MusicPlayer.ViewModels
         // ✅ Parameterless constructor for XAML
         public MainViewModel()
         {
-            _audioPlayerService = new AudioService();
+            _audioPlayerService = ServiceLocator.AudioServiceInstance;
             Playlists = new ObservableCollection<Playlist>();
             PlayCommand = new Command(Play);
             PauseCommand = new Command(Pause);
@@ -91,7 +91,7 @@ namespace MusicPlayer.ViewModels
             CurrentPlaylist = Playlists[0];
         }
 
-        private void Play()
+        public void Play()
         {
             if (CurrentSong != null && !string.IsNullOrEmpty(CurrentSong.FilePath))
             {
@@ -108,7 +108,7 @@ namespace MusicPlayer.ViewModels
             }
         }
 
-        private void Pause()
+        public void Pause()
         {
             if (IsPlaying)
             {
@@ -117,7 +117,7 @@ namespace MusicPlayer.ViewModels
             }
         }
 
-        private void Skip()
+        public void Skip()
         {
             var nextSong = CurrentPlaylist?.Songs
                 .SkipWhile(s => s != CurrentSong)

@@ -4,9 +4,11 @@ namespace MusicPlayer.Services
 {
     public class AudioService
     {
+
         private IAudioPlayer _audioPlayer;
         private double _pausePosition;
         public string CurrentFilePath = "";
+        public string currentSong = "";
         public event Action<bool> PlaybackStateChanged; // True = Playing, False = Paused
         public bool IsPlaying => _audioPlayer?.IsPlaying ?? false;
         public double CurrentPosition => _audioPlayer?.CurrentPosition ?? 0;
@@ -24,7 +26,9 @@ namespace MusicPlayer.Services
             {
                 _audioPlayer.Seek(_pausePosition); // Resume from last position
             }
+
             PlaybackStateChanged?.Invoke(IsPlaying); // Notify state change
+            currentSong = Path.GetFileName(filePath);
             _audioPlayer.Play();
         }
 
