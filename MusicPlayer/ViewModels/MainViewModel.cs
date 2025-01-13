@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MusicPlayer.Services;
 using Microsoft.Maui.Controls;
+using CommunityToolkit.Maui.Converters;
 
 namespace MusicPlayer.ViewModels
 {
@@ -63,7 +64,8 @@ namespace MusicPlayer.ViewModels
         public Command SkipCommand { get; }
         public Command AddToPlaylistCommand { get; }
         public Command CreatePlaylistCommand { get; }
-        
+        public Command DeletePlaylistCommand { get; }
+
 
         // ✅ Parameterless constructor for XAML
         public MainViewModel()
@@ -75,8 +77,10 @@ namespace MusicPlayer.ViewModels
             SkipCommand = new Command(Skip);
             AddToPlaylistCommand = new Command(async () => await AddToPlaylist());
             CreatePlaylistCommand = new Command(async () => await CreatePlaylist());
+            DeletePlaylistCommand = new Command(async () => await DeletePlaylist());
 
             LoadPlaylistsAsync();
+            OnPropertyChanged();
         }
 
         private async Task LoadPlaylistsAsync()
@@ -87,8 +91,10 @@ namespace MusicPlayer.ViewModels
             {
                 Playlists.Add(playlist); // Add new playlists to the collection
             }
-                
-            CurrentPlaylist = Playlists[0];
+            if(playlists.Count() < 0)
+            {
+                CurrentPlaylist = Playlists[0];
+            }
         }
 
         public void Play()
@@ -119,20 +125,48 @@ namespace MusicPlayer.ViewModels
 
         public void Skip()
         {
-            var nextSong = CurrentPlaylist?.Songs
-                .SkipWhile(s => s != CurrentSong)
-                .Skip(1)
-                .FirstOrDefault();
+        var nextSong = CurrentPlaylist?.Songs
+            .SkipWhile(s => s == CurrentSong)
+            .FirstOrDefault();
 
             if (nextSong != null)
             {
+                _audioPlayerService.Stop();
                 CurrentSong = nextSong;
-                Play();
+                _audioPlayerService.Play(nextSong.FilePath);
+            }
+        }
+
+        private async Task DeletePlaylist()
+        {
+            if (CurrentPlaylist == null)
+            {
+                await Application.Current.MainPage.DisplayAlert("No playlist selected", "There is no playlist selected.", "Ok");
+                return;
+            }
+
+            bool confirmation = await Application.Current.MainPage.DisplayAlert(
+                "Confirm deletion",
+                "Are you sure you wish to delete playlist: " + CurrentPlaylist.Name + "?", 
+                "Delete playlist", "Cancel");
+
+            if (confirmation == null || confirmation == false) return;
+
+            else if (confirmation)
+            {
+                _fileService.DeletePlaylist(CurrentPlaylist);
+                await LoadPlaylistsAsync();
+                OnPropertyChanged();
             }
         }
 
         private async Task AddToPlaylist()
         {
+            if (CurrentPlaylist == null)
+            {
+                await Application.Current.MainPage.DisplayAlert("No playlist selected", "There is no playlist selected.", "Ok");
+                return;
+            }
             var customAudioType = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
             {
                 { DevicePlatform.Android, new[] { "audio/mpeg", "audio/mp3", "audio/wav" } },
@@ -157,6 +191,7 @@ namespace MusicPlayer.ViewModels
                 OnPropertyChanged(nameof(CurrentPlaylist));
             }
             await LoadPlaylistsAsync();
+            OnPropertyChanged();
         }
 
         private async Task CreatePlaylist()
@@ -167,7 +202,7 @@ namespace MusicPlayer.ViewModels
                 "Enter a name for your new playlist:",
                 accept: "OK",
                 cancel: "Cancel",
-                placeholder: "Playlist name");
+                placeholder: "Playlist name");  
 
             // Check if the user provided a name or canceled the dialog
             if (!string.IsNullOrEmpty(playlistName))
@@ -181,6 +216,7 @@ namespace MusicPlayer.ViewModels
                 Console.WriteLine("Playlist creation canceled or no name provided.");
             }
             await LoadPlaylistsAsync();
+            OnPropertyChanged();
         }
     }
 }

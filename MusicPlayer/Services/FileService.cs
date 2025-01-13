@@ -22,9 +22,8 @@ namespace MusicPlayer.Services
                 for (int i = 0; i < playlist.Songs.Count(); i++)
                 {
                     playlist.Songs[i].Title = playlist.Songs[i].Title.Replace(";", string.Empty);
-                    playlist.Songs[i].Artist = playlist.Songs[i].Title.Replace(";", string.Empty);
 
-                    await writer.WriteLineAsync(playlist.Songs[i].Title + ";" + playlist.Songs[i].Artist + ";" + playlist.Songs[i].FilePath);
+                    await writer.WriteLineAsync(playlist.Songs[i].Title + ";" + playlist.Songs[i].FilePath);
                 }
             }
         }
@@ -32,7 +31,7 @@ namespace MusicPlayer.Services
         public async void CreatePlaylist(string playlistName)
         {
 
-            string filePath = Path.Combine(targetPath, playlistName);
+            string filePath = Path.Combine(targetPath, playlistName + ".txt");
 
             if (!Directory.Exists(targetPath))
             {
@@ -54,7 +53,6 @@ namespace MusicPlayer.Services
             {
                 Console.WriteLine($"Error creating playlist: {ex.Message}");
             }
-            //Playlist playlist1 = new Playlist(playlistName);
         }
 
         public async Task<ObservableCollection<Playlist>> GetPlaylists()
@@ -82,9 +80,9 @@ namespace MusicPlayer.Services
                             {
                                 Console.WriteLine($"Read line: {line}");
                                 string[] splitSong = line.Split(";");
-                                if (splitSong.Length >= 3)
+                                if (splitSong.Length >= 2)
                                 {
-                                    Song song = new Song { Title = splitSong[0], FilePath = splitSong[2] };
+                                    Song song = new Song { Title = splitSong[0], FilePath = splitSong[1] };
                                     playlist.Songs.Add(song);
                                 }
                                 else
@@ -109,11 +107,20 @@ namespace MusicPlayer.Services
 
 
 
-        public void RemovePlaylist(Playlist playlist)
+        public void DeletePlaylist(Playlist playlist)
         {
-        }
-        public void UpdatePlaylist(Playlist playlist)
-        {
+            string filePath = Path.Combine(targetPath, playlist.Name);
+
+            try
+            {
+                
+                File.Delete(filePath + ".txt") ; // Delets file
+            }
+
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error creating playlist: {ex.Message}");
+            }
 
         }
     }
