@@ -40,7 +40,6 @@ namespace MusicPlayer.Services
 
             try
             {
-                // Create and write to the file
                 using (FileStream outputStream = File.Create(filePath)) // Creates or overwrites the file
                 using (StreamWriter writer = new StreamWriter(outputStream))
                 {
@@ -105,23 +104,19 @@ namespace MusicPlayer.Services
             return allPlaylists;
         }
 
-
-
         public void DeletePlaylist(Playlist playlist)
         {
             string filePath = Path.Combine(targetPath, playlist.Name);
-
             try
             {
                 
-                File.Delete(filePath + ".txt") ; // Delets file
+                File.Delete(filePath + ".txt") ; // Deletes file
             }
 
             catch (Exception ex)
             {
                 Console.WriteLine($"Error creating playlist: {ex.Message}");
             }
-
         }
     }
 }

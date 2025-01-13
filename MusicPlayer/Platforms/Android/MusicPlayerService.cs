@@ -18,7 +18,7 @@ namespace MusicPlayer.Services
 
         public override IBinder OnBind(Intent intent)
         {
-            return null; // No binding needed for background playback
+            return null; 
         }
 
         public override void OnCreate()
@@ -58,15 +58,11 @@ namespace MusicPlayer.Services
                     Android.Util.Log.Debug("MusicPlayerService", $"Received action: {action} PAUSE");
                     
                     ServiceLocator.AudioServiceInstance.Pause();
-                    //OnPlaybackStateChanged(false);
-                    //_audioService.Pause(); // Pause music if it's playing
                 }
                 else
                 {
                     Android.Util.Log.Debug("MusicPlayerService", $"Received action: {action} RESUME");
                     ServiceLocator.AudioServiceInstance.Resume();
-                    //OnPlaybackStateChanged(true);
-                    //_audioService.Resume(); // Resume music if paused
                 }
 
                 // Update notification after play/pause action
@@ -75,7 +71,6 @@ namespace MusicPlayer.Services
             else if (!string.IsNullOrEmpty(filePath)) // Start playing a new file if filePath is passed
             {
                 ServiceLocator.AudioServiceInstance.Play(filePath);
-                //_audioService.Play(filePath); // Play the new music file
                 UpdateNotification(); // Update notification after starting music
             }
 
@@ -85,7 +80,7 @@ namespace MusicPlayer.Services
             _playPausePendingIntent = PendingIntent.GetService(this, 0, playPauseIntent, PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Mutable);
 
             // Create the notification channel if necessary
-            if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.O) 
             {
                 var channel = new NotificationChannel(
                     "music_player_channel",
@@ -101,10 +96,10 @@ namespace MusicPlayer.Services
                 .SetContentTitle("Music Player")
                 .SetContentIntent(_playPausePendingIntent)
                 .SetContentText(ServiceLocator.AudioServiceInstance.IsPlaying ?  "Playing music: " + ServiceLocator.AudioServiceInstance.currentSong : "Paused")
-                .SetSmallIcon(Resource.Drawable.exo_icon_pause) // Replace with your actual icon
+                .SetSmallIcon(Resource.Drawable.exo_icon_pause) 
                 .SetStyle(new AndroidX.Media.App.NotificationCompat.MediaStyle()
-                    .SetShowActionsInCompactView(0) // Show action buttons compactly
-                    .SetMediaSession(null)) // Set to null if you don't have a media session
+                    .SetShowActionsInCompactView(0)
+                    .SetMediaSession(null))
                 .AddAction(
                     ServiceLocator.AudioServiceInstance.IsPlaying ? Resource.Drawable.exo_icon_pause : Resource.Drawable.exo_icon_play,
                     ServiceLocator.AudioServiceInstance.IsPlaying ? "Pause" : "Play",
